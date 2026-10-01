@@ -1,0 +1,3 @@
+# The wrapper script runs inside Linux containers; CRLF would break its shebang.
+mvnw text eol=lf
+*.cmd text eol=crlf
