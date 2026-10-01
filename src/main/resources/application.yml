@@ -23,7 +23,7 @@ spring:
 app:
   shortener:
     base-url: ${APP_BASE_URL:http://localhost:8080}
-    own-hosts: ${APP_OWN_HOSTS:localhost,127.0.0.1}
+    own-hosts: ${APP_OWN_HOSTS:localhost,127.0.0.1,[::1]}
     max-attempts: 10
     max-url-length: 2048
 

@@ -28,7 +28,8 @@ public class UrlMapping {
     private String destinationUrl;
 
     /** The URL identity per ADR 0002; used for duplicate detection. */
-    @Column(name = "normalized_url", nullable = false, updatable = false, length = 2048)
+    // One longer than destination_url: N5 can add "/" to a maximum-length input (V2 migration).
+    @Column(name = "normalized_url", nullable = false, updatable = false, length = 2049)
     private String normalizedUrl;
 
     @Column(name = "normalized_url_hash", nullable = false, updatable = false, length = 64)

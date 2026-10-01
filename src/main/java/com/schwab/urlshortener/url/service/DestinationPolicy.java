@@ -9,6 +9,10 @@ import java.net.URI;
  */
 public interface DestinationPolicy {
 
-    /** @throws InvalidUrlException with {@code DESTINATION_NOT_ALLOWED} if the destination is rejected */
+    /**
+     * Checks whether a syntactically valid destination is permitted.
+     *
+     * @throws InvalidUrlException if the destination violates this policy
+     */
     void check(URI destination);
 }

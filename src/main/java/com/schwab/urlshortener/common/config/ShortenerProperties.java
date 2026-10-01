@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,10 +23,13 @@ public record ShortenerProperties(
         @Min(1) @Max(100) int maxAttempts,
         @Min(1) @Max(2048) int maxUrlLength) {
 
-    /** Hosts that identify this service; shortening a URL on one of them would create a redirect loop. */
+    /**
+     * Hosts that identify this service; shortening a URL on one of them would create a redirect loop.
+     * Returned as configured; the self-reference policy canonicalizes them for comparison.
+     */
     public Set<String> selfHosts() {
         return Stream.concat(ownHosts.stream(), Stream.ofNullable(baseUrl.getHost()))
-                .map(host -> host.strip().toLowerCase(Locale.ROOT))
+                .map(String::strip)
                 .filter(host -> !host.isEmpty())
                 .collect(Collectors.toUnmodifiableSet());
     }

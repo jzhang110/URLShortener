@@ -59,7 +59,7 @@ public class UrlService {
         destinationPolicies.forEach(policy -> policy.check(destination));
 
         String destinationUrl = rawUrl.strip();
-        String normalizedUrl = normalizer.normalize(rawUrl);
+        String normalizedUrl = normalizer.normalize(destination);
         String normalizedUrlHash = Sha256.hex(normalizedUrl);
 
         Optional<UrlMapping> existing = repository.findByNormalizedUrlHash(normalizedUrlHash);
@@ -79,10 +79,13 @@ public class UrlService {
                 log.info("Created short code {}", saved.getShortCode());
                 return ShortenResult.created(saved);
             } catch (DataIntegrityViolationException e) {
-                // A concurrent request inserted this URL or this code between our read and write.
+                // Expected only if a concurrent request inserted this URL or this code between our read and write.
                 Optional<UrlMapping> winner = repository.findByNormalizedUrlHash(normalizedUrlHash);
                 if (winner.isPresent()) {
                     return ShortenResult.existing(winner.get());
+                }
+                if (!repository.existsByShortCode(candidate)) {
+                    throw e; // neither race explains it: an unexpected violation, not a collision to retry
                 }
                 log.debug("Short code {} taken concurrently, trying attempt {}", candidate, attempt + 1);
             }

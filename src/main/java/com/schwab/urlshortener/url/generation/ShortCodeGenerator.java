@@ -1,8 +1,10 @@
 package com.schwab.urlshortener.url.generation;
 
 /**
- * Produces candidate short codes. Extension point: custom aliases can supply a different strategy.
- * Implementations must be deterministic and stateless; uniqueness is enforced by the database, not here.
+ * Produces system-generated candidate short codes.
+ * Alternate system-generated strategies may implement this interface.
+ * Implementations must be deterministic and stateless;
+ * uniqueness is enforced by the database.
  */
 public interface ShortCodeGenerator {
 

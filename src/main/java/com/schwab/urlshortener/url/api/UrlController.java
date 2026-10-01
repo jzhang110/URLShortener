@@ -38,10 +38,13 @@ class UrlController {
                     + "equivalent under the normalization rules returns the existing mapping with 200.")
     @ApiResponse(responseCode = "201", description = "Created a new short URL; Location is the short URL")
     @ApiResponse(responseCode = "200", description = "An equivalent URL was already shortened; existing mapping returned")
-    @ApiResponse(responseCode = "400", description = "Missing, malformed, unsupported or disallowed URL",
+    @ApiResponse(responseCode = "400", description = "Missing, malformed, unsupported, invalid-port or disallowed URL",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "503", description = "No short code could be allocated",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "500", description = "Unexpected error; quote the correlationId when reporting it",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(implementation = ProblemDetail.class)))
     ResponseEntity<UrlResponse> shorten(@Valid @RequestBody CreateUrlRequest request) {

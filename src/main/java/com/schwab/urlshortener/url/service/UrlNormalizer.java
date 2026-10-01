@@ -12,10 +12,9 @@ import org.springframework.stereotype.Component;
 public class UrlNormalizer {
 
     /**
-     * @param validatedUrl input that has already passed {@link UrlValidator}
+     * @param uri the URI returned by {@link UrlValidator}, which already applied N1 (trim) before parsing
      */
-    public String normalize(String validatedUrl) {
-        URI uri = URI.create(validatedUrl.strip());                  // N1 trim
+    public String normalize(URI uri) {
         StringBuilder normalized = new StringBuilder()
                 .append(uri.getScheme().toLowerCase(Locale.ROOT))   // N2 scheme case
                 .append("://")

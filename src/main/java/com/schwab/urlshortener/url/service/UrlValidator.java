@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 public class UrlValidator {
 
     private static final Set<String> SUPPORTED_SCHEMES = Set.of("http", "https");
+    private static final int MIN_PORT = 1;
+    private static final int MAX_PORT = 65535;
 
     private final int maxUrlLength;
 
@@ -46,6 +48,10 @@ public class UrlValidator {
         }
         if (uri.getRawUserInfo() != null) {
             throw new InvalidUrlException(Reason.USERINFO_NOT_ALLOWED);
+        }
+        int port = uri.getPort(); // -1 when no port is given
+        if (port != -1 && (port < MIN_PORT || port > MAX_PORT)) {
+            throw new InvalidUrlException(Reason.INVALID_PORT);
         }
         return uri;
     }
