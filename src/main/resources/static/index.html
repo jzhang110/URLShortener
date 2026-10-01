@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>URL Shortener</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>URL Shortener</h1>
+    <p class="note">Prototype demo. Deactivation is not access-controlled in this prototype; production use would require authenticated owner or administrator authorization.</p>
+
+    <section>
+      <form id="shorten-form">
+        <label for="url">Destination URL</label>
+        <div class="row">
+          <input id="url" name="url" type="url" required maxlength="2048" placeholder="https://example.com/some/long/path" autocomplete="off">
+          <button type="submit">Shorten</button>
+        </div>
+      </form>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="result" hidden>
+      <h2>Short URL</h2>
+      <dl>
+        <dt>shortCode</dt><dd id="short-code"></dd>
+        <dt>shortUrl</dt><dd id="short-url"></dd>
+        <dt>destinationUrl</dt><dd id="destination-url"></dd>
+        <dt>createdAt</dt><dd id="created-at"></dd>
+      </dl>
+      <div class="row">
+        <a id="open" class="button" target="_blank" rel="noopener noreferrer">Open</a>
+        <button id="copy" type="button">Copy</button>
+        <button id="refresh" type="button">Refresh analytics</button>
+        <button id="deactivate" type="button">Deactivate</button>
+      </div>
+
+      <h2>Analytics</h2>
+      <dl>
+        <dt>totalClicks</dt><dd id="total-clicks"></dd>
+        <dt>lastClickedAt</dt><dd id="last-clicked-at"></dd>
+      </dl>
+
+      <h2>Lifecycle</h2>
+      <dl>
+        <dt>status</dt><dd id="status"></dd>
+        <dt>deactivatedAt</dt><dd id="deactivated-at"></dd>
+      </dl>
+    </section>
+  </main>
+</body>
+</html>

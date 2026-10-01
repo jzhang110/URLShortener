@@ -42,7 +42,7 @@ class ShortCodeValidationIntegrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/foo/bar", "/://test"})
+    @ValueSource(strings = {"/foo/bar", "/://test"}) // "/" now serves the UI (ADR 0010)
     void pathsThatDoNotMatchTheRedirectRouteAreOrdinary404s(String path) {
         ApiResponse response = api.get(path);
 
