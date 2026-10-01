@@ -92,6 +92,14 @@ class UrlNormalizerTest {
         }
 
         @Test
+        void fragmentIsKept() {
+            assertThat(normalize("https://example.com/page#a")).isEqualTo("https://example.com/page#a");
+            assertThat(normalize("https://example.com/page#a"))
+                    .isNotEqualTo(normalize("https://example.com/page#b"))
+                    .isNotEqualTo(normalize("https://example.com/page"));
+        }
+
+        @Test
         void queryParameterOrderIsKept() {
             assertThat(normalize("https://example.com/?b=2&a=1")).isEqualTo("https://example.com/?b=2&a=1");
         }

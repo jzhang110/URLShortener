@@ -68,12 +68,29 @@ class ShortenIntegrationTest extends IntegrationTest {
         assertThat(countRows("url_mapping")).isEqualTo(1);
     }
 
+    @ParameterizedTest(name = "{0} is equivalent to {1}")
+    @CsvSource({
+            "HTTPS://EXAMPLE.COM/,   https://example.com/", // N2 + N3 together
+            "http://example.com:80/, http://example.com/"   // N4 for http
+    })
+    void equivalentPairsShareOneMapping(String first, String second) {
+        ApiResponse original = api.shorten(first);
+        ApiResponse duplicate = api.shorten(second);
+
+        assertThat(original.status()).isEqualTo(201);
+        assertThat(duplicate.status()).isEqualTo(200);
+        assertThat(duplicate.shortCode()).isEqualTo(original.shortCode());
+        assertThat(countRows("url_mapping")).isEqualTo(1);
+    }
+
     @ParameterizedTest(name = "{0} and {1} are distinct")
     @CsvSource({
-            "https://example.com/,     https://example.com:8443/",
-            "https://example.com/path, https://example.com/path/",
-            "https://example.com/a,    https://example.com/A",
-            "http://example.com/,      https://example.com/"
+            "https://example.com/,         https://example.com:8443/",
+            "https://example.com/path,     https://example.com/path/",
+            "https://example.com/a,        https://example.com/A",
+            "http://example.com/,          https://example.com/",
+            "'https://example.com/?a=1&b=2', 'https://example.com/?b=2&a=1'", // query order is kept
+            "https://example.com/page#top, https://example.com/page"         // fragment is kept
     })
     void urlsOutsideTheNormalizationRulesAreDistinct(String first, String second) {
         ApiResponse a = api.shorten(first);

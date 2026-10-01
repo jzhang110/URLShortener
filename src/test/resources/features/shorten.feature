@@ -28,6 +28,7 @@ Feature: Shorten a URL
       | N3 host case          | https://Example.COM/     |
       | N4 default port       | https://example.com:443/ |
       | N5 empty path is root | https://example.com      |
+      | N2 + N3 combined      | HTTPS://EXAMPLE.COM/     |
 
   Scenario Outline: URLs that differ outside the normalization rules get different short codes
     Given the URL "<first>" has been shortened
@@ -36,7 +37,9 @@ Feature: Shorten a URL
     And a different short code is returned
 
     Examples:
-      | first                    | second                    |
-      | https://example.com/     | https://example.com:8443/ |
-      | https://example.com/path | https://example.com/path/ |
-      | https://example.com/a    | https://example.com/A     |
+      | first                        | second                       |
+      | https://example.com/         | https://example.com:8443/    |
+      | https://example.com/path     | https://example.com/path/    |
+      | https://example.com/a        | https://example.com/A        |
+      | https://example.com/?a=1&b=2 | https://example.com/?b=2&a=1 |
+      | https://example.com/page#top | https://example.com/page     |
