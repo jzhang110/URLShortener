@@ -24,9 +24,14 @@ public class RedirectService {
         this.analyticsService = analyticsService;
     }
 
-    /** @throws com.schwab.urlshortener.url.domain.ShortCodeNotFoundException before any click is recorded */
+    /**
+     * Eligibility is checked before any click is recorded, so a refused redirect never counts.
+     *
+     * @throws com.schwab.urlshortener.url.domain.ShortCodeNotFoundException if the code is unknown
+     * @throws com.schwab.urlshortener.url.domain.ShortCodeDeactivatedException if the mapping no longer redirects
+     */
     public URI redirect(String shortCode) {
-        ResolvedUrl resolved = urlService.resolve(shortCode);
+        ResolvedUrl resolved = urlService.resolveForRedirect(shortCode);
         analyticsService.recordClick(resolved);
         return URI.create(resolved.destinationUrl());
     }

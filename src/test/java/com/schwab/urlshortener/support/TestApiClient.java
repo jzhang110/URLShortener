@@ -44,6 +44,11 @@ public final class TestApiClient {
         return send(HttpRequest.newBuilder(URI.create(baseUrl + path)).header(headerName, headerValue).GET());
     }
 
+    public ApiResponse deactivate(String shortCode) {
+        return send(HttpRequest.newBuilder(URI.create(baseUrl + "/api/v1/urls/" + shortCode + "/deactivate"))
+                .POST(HttpRequest.BodyPublishers.noBody()));
+    }
+
     public ApiResponse analytics(String shortCode) {
         return get("/api/v1/urls/" + shortCode + "/analytics");
     }

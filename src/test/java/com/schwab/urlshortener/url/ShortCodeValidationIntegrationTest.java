@@ -26,8 +26,10 @@ class ShortCodeValidationIntegrationTest extends IntegrationTest {
     void malformedShortCodeIsRejectedBeforeAnyLookup(String code) {
         assertInvalidShortCode(api.get("/" + code));
         assertInvalidShortCode(api.analytics(code));
+        assertInvalidShortCode(api.deactivate(code));
 
         verify(urlMappingRepository, never()).findByShortCode(any());
+        verify(urlMappingRepository, never()).findForUpdateByShortCode(any());
         assertThat(countRows("click_event")).isZero();
     }
 
@@ -36,6 +38,7 @@ class ShortCodeValidationIntegrationTest extends IntegrationTest {
     void wellFormedUnknownShortCodeIsNotFound(String code) {
         assertNotFound(api.get("/" + code));
         assertNotFound(api.analytics(code));
+        assertNotFound(api.deactivate(code));
     }
 
     @ParameterizedTest

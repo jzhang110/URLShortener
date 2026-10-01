@@ -39,6 +39,10 @@ class RedirectController {
     @ApiResponse(responseCode = "404", description = "No URL exists for this well-formed short code",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "410", description = "The short URL has been deactivated (SHORT_CODE_DEACTIVATED); "
+            + "no redirect and no click is recorded",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)))
     ResponseEntity<Void> redirect(
             @Parameter(description = "Six lowercase hex characters", example = "3f2a9c",
                     schema = @Schema(pattern = ShortCode.FORMAT)) @PathVariable String shortCode) {

@@ -38,6 +38,7 @@ public class UrlShortenerSteps {
     private TestApiClient api;
     private String destinationUrl;
     private String existingShortCode;
+    private String firstDeactivatedAt;
     private ApiResponse response;
 
     @Before
@@ -70,6 +71,23 @@ public class UrlShortenerSteps {
         for (int i = 0; i < times; i++) {
             assertThat(api.get("/" + existingShortCode).status()).isEqualTo(302);
         }
+    }
+
+    @Given("the short URL has been deactivated")
+    public void theShortUrlHasBeenDeactivated() {
+        ApiResponse deactivated = api.deactivate(existingShortCode);
+        assertThat(deactivated.status()).isEqualTo(200);
+        firstDeactivatedAt = deactivated.json().get("deactivatedAt").asString();
+    }
+
+    @When("the client deactivates the short URL")
+    public void theClientDeactivatesTheShortUrl() {
+        response = api.deactivate(existingShortCode);
+    }
+
+    @When("the client deactivates an unknown short code")
+    public void theClientDeactivatesAnUnknownShortCode() {
+        response = api.deactivate(unknownShortCode());
     }
 
     @When("the client requests a shortened URL")
@@ -179,6 +197,17 @@ public class UrlShortenerSteps {
     @And("the analytics report no last click time")
     public void theAnalyticsReportNoLastClickTime() {
         assertThat(response.json().get("lastClickedAt").isNull()).isTrue();
+    }
+
+    @And("the short URL status is {string}")
+    public void theShortUrlStatusIs(String status) {
+        assertThat(response.json().get("status").asString()).isEqualTo(status);
+        assertThat(response.json().get("deactivatedAt").asString()).isNotBlank();
+    }
+
+    @And("the original deactivation time is preserved")
+    public void theOriginalDeactivationTimeIsPreserved() {
+        assertThat(response.json().get("deactivatedAt").asString()).isEqualTo(firstDeactivatedAt);
     }
 
     private String unknownShortCode() {

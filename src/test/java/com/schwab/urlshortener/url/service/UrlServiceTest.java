@@ -15,8 +15,10 @@ import static org.mockito.Mockito.when;
 import com.schwab.urlshortener.common.config.ShortenerProperties;
 import com.schwab.urlshortener.url.domain.InvalidShortCodeException;
 import com.schwab.urlshortener.url.domain.InvalidUrlException;
+import com.schwab.urlshortener.url.domain.ShortCodeDeactivatedException;
 import com.schwab.urlshortener.url.domain.ShortCodeExhaustedException;
 import com.schwab.urlshortener.url.domain.ShortCodeNotFoundException;
+import com.schwab.urlshortener.url.domain.UrlDeactivatedException;
 import com.schwab.urlshortener.url.domain.UrlMapping;
 import com.schwab.urlshortener.url.generation.Sha256;
 import com.schwab.urlshortener.url.generation.ShortCodeGenerator;
@@ -177,9 +179,65 @@ class UrlServiceTest {
         verifyNoInteractions(repository);
     }
 
+    @Test
+    void activeMappingIsEligibleForRedirect() {
+        when(repository.findByShortCode("abcdef")).thenReturn(Optional.of(mapping("abcdef")));
+
+        assertThat(service.resolveForRedirect("abcdef").destinationUrl()).isEqualTo(URL);
+    }
+
+    @Test
+    void deactivatedMappingIsNotEligibleForRedirect() {
+        when(repository.findByShortCode("abcdef")).thenReturn(Optional.of(deactivatedMapping("abcdef")));
+
+        assertThatThrownBy(() -> service.resolveForRedirect("abcdef"))
+                .isInstanceOf(ShortCodeDeactivatedException.class);
+    }
+
+    @Test
+    void redirectResolutionStillDistinguishesUnknownAndMalformedCodes() {
+        when(repository.findByShortCode("abcdef")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resolveForRedirect("abcdef")).isInstanceOf(ShortCodeNotFoundException.class);
+        assertThatThrownBy(() -> service.resolveForRedirect("ABCDEF")).isInstanceOf(InvalidShortCodeException.class);
+    }
+
+    // Guard for analytics: the lifecycle-agnostic lookup must keep finding deactivated mappings.
+    @Test
+    void lookupStillResolvesDeactivatedMapping() {
+        when(repository.findByShortCode("abcdef")).thenReturn(Optional.of(deactivatedMapping("abcdef")));
+
+        assertThat(service.resolve("abcdef").destinationUrl()).isEqualTo(URL);
+    }
+
+    @Test
+    void shorteningAnEquivalentOfADeactivatedUrlConflictsWithoutInserting() {
+        when(repository.findByNormalizedUrlHash(Sha256.hex(URL))).thenReturn(Optional.of(deactivatedMapping("abcdef")));
+
+        assertThatThrownBy(() -> service.shorten(URL)).isInstanceOf(UrlDeactivatedException.class);
+        verify(repository, never()).saveAndFlush(any());
+        verifyNoInteractions(generator);
+    }
+
+    @Test
+    void deactivatedConcurrentWinnerAlsoConflicts() {
+        when(repository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(repository.findByNormalizedUrlHash(Sha256.hex(URL)))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(deactivatedMapping("000000")));
+
+        assertThatThrownBy(() -> service.shorten(URL)).isInstanceOf(UrlDeactivatedException.class);
+    }
+
     private static UrlMapping mapping(String code) {
         UrlMapping mapping = new UrlMapping(code, URL, URL, Sha256.hex(URL), Instant.now());
         ReflectionTestUtils.setField(mapping, "id", 1L);
+        return mapping;
+    }
+
+    private static UrlMapping deactivatedMapping(String code) {
+        UrlMapping mapping = mapping(code);
+        mapping.deactivate(Instant.parse("2026-10-01T07:30:00Z"));
         return mapping;
     }
 }

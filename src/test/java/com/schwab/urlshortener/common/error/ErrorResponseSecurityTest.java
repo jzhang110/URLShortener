@@ -77,6 +77,39 @@ class ErrorResponseSecurityTest extends IntegrationTest {
     }
 
     @Test
+    void deactivatedShortCodeFollowsContract() {
+        String shortCode = api.shorten("https://example.com/retired").shortCode();
+        api.deactivate(shortCode);
+
+        ApiResponse response = api.get("/" + shortCode);
+
+        assertContract(response, 410, "SHORT_CODE_DEACTIVATED");
+        assertThat(fieldNames(response.json())).isEqualTo(CONTRACT_FIELDS);
+        assertThat(response.json().get("title").asString()).isEqualTo("Gone");
+        assertThat(response.json().get("type").asString())
+                .isEqualTo("urn:problem-type:url-shortener:short-code-deactivated");
+        assertThat(response.json().get("detail").asString()).isEqualTo("This short URL has been deactivated.");
+        assertNoInternalDetails(response);
+    }
+
+    @Test
+    void deactivatedUrlConflictFollowsContract() {
+        String shortCode = api.shorten("https://example.com/retired").shortCode();
+        api.deactivate(shortCode);
+
+        ApiResponse response = api.shorten("https://example.com/retired");
+
+        assertContract(response, 409, "URL_DEACTIVATED");
+        assertThat(fieldNames(response.json())).isEqualTo(CONTRACT_FIELDS);
+        assertThat(response.json().get("title").asString()).isEqualTo("Conflict");
+        assertThat(response.json().get("type").asString()).isEqualTo("urn:problem-type:url-shortener:url-deactivated");
+        assertThat(response.json().get("detail").asString())
+                .isEqualTo("This URL already has a deactivated short code.");
+        assertNoInternalDetails(response);
+        assertThat(response.body()).doesNotContain(shortCode); // the inactive short URL is not handed back
+    }
+
+    @Test
     void unexpectedErrorReturnsGeneric500WithoutInternalDetails() {
         doThrow(new IllegalStateException(INTERNAL_MESSAGE))
                 .when(urlMappingRepository).findByNormalizedUrlHash(anyString());

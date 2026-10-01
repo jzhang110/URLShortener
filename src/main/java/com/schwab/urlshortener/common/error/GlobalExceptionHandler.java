@@ -4,8 +4,10 @@ import com.schwab.urlshortener.common.filter.CorrelationIdFilter;
 import com.schwab.urlshortener.common.logging.LogSanitizer;
 import com.schwab.urlshortener.url.domain.InvalidShortCodeException;
 import com.schwab.urlshortener.url.domain.InvalidUrlException;
+import com.schwab.urlshortener.url.domain.ShortCodeDeactivatedException;
 import com.schwab.urlshortener.url.domain.ShortCodeExhaustedException;
 import com.schwab.urlshortener.url.domain.ShortCodeNotFoundException;
+import com.schwab.urlshortener.url.domain.UrlDeactivatedException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.time.Instant;
@@ -56,6 +58,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ShortCodeNotFoundException.class)
     ProblemDetail handleNotFound(ShortCodeNotFoundException e, HttpServletRequest request) {
         return problem(HttpStatus.NOT_FOUND, "SHORT_CODE_NOT_FOUND", "No URL exists for this short code.", request);
+    }
+
+    @ExceptionHandler(ShortCodeDeactivatedException.class)
+    ProblemDetail handleShortCodeDeactivated(ShortCodeDeactivatedException e, HttpServletRequest request) {
+        return problem(HttpStatus.GONE, "SHORT_CODE_DEACTIVATED", "This short URL has been deactivated.", request);
+    }
+
+    @ExceptionHandler(UrlDeactivatedException.class)
+    ProblemDetail handleUrlDeactivated(UrlDeactivatedException e, HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "URL_DEACTIVATED", "This URL already has a deactivated short code.",
+                request);
     }
 
     @ExceptionHandler(ShortCodeExhaustedException.class)

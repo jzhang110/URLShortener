@@ -28,7 +28,8 @@ class AnalyticsController {
 
     @GetMapping("/{shortCode}/analytics")
     @Operation(summary = "Get click analytics",
-            description = "Counts successful redirects only; unknown codes and failed redirects are not counted.")
+            description = "Counts successful redirects only; unknown codes and failed redirects are not counted. "
+                    + "Historical analytics remain available after the short URL is deactivated.")
     @ApiResponse(responseCode = "200", description = "Analytics for the short code")
     @ApiResponse(responseCode = "400", description = "Malformed short code (must be six lowercase hex characters)",
             content = @Content(mediaType = "application/problem+json",

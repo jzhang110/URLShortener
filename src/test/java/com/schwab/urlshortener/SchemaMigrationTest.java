@@ -20,7 +20,40 @@ class SchemaMigrationTest extends IntegrationTest {
     void flywayAppliedAllMigrationsSuccessfully() {
         List<String> applied = jdbc.queryForList(
                 "SELECT \"version\" FROM \"flyway_schema_history\" WHERE \"success\" = TRUE", String.class);
-        assertThat(applied).contains("1", "2");
+        assertThat(applied).contains("1", "2", "3");
+    }
+
+    @Test
+    void lifecycleColumnsHaveTheExpectedShape() {
+        Map<String, Object> status = column("status");
+        assertThat(((Number) status.get("character_maximum_length")).intValue()).isEqualTo(32);
+        assertThat(status.get("is_nullable")).isEqualTo("NO");
+        assertThat(column("deactivated_at").get("is_nullable")).isEqualTo("YES");
+    }
+
+    @Test
+    void rowsInsertedWithoutAStatusDefaultToActive() {
+        insertMapping("abcdef", "hash-1");
+
+        Map<String, Object> row = jdbc.queryForMap("SELECT status, deactivated_at FROM url_mapping");
+        assertThat(row.get("status")).isEqualTo("ACTIVE");
+        assertThat(row.get("deactivated_at")).isNull();
+    }
+
+    @Test
+    void databaseEnforcesTheLifecycleInvariant() {
+        insertMapping("abcdef", "hash-1");
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE url_mapping SET status = 'DEACTIVATED'"))
+                .as("DEACTIVATED without a deactivation time")
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update("UPDATE url_mapping SET deactivated_at = CURRENT_TIMESTAMP"))
+                .as("ACTIVE with a deactivation time")
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE url_mapping SET status = 'EXPIRED', deactivated_at = CURRENT_TIMESTAMP"))
+                .as("a status the schema does not define")
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -42,6 +75,7 @@ class SchemaMigrationTest extends IntegrationTest {
         assertThat(constraints).contains(
                 "uk_url_mapping_short_code",
                 "uk_url_mapping_normalized_url_hash",
+                "ck_url_mapping_lifecycle",
                 "fk_click_event_url_mapping");
     }
 
@@ -73,6 +107,13 @@ class SchemaMigrationTest extends IntegrationTest {
         assertThatThrownBy(() -> jdbc.update(
                 "INSERT INTO click_event (url_mapping_id, clicked_at) VALUES (999999, CURRENT_TIMESTAMP)"))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private Map<String, Object> column(String name) {
+        return jdbc.queryForMap("""
+                SELECT character_maximum_length, is_nullable FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'url_mapping' AND column_name = ?
+                """, name);
     }
 
     private void insertMapping(String shortCode, String hash) {

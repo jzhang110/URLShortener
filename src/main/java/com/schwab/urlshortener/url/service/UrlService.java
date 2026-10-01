@@ -3,9 +3,12 @@ package com.schwab.urlshortener.url.service;
 import com.schwab.urlshortener.common.config.ShortenerProperties;
 import com.schwab.urlshortener.url.domain.InvalidShortCodeException;
 import com.schwab.urlshortener.url.domain.ShortCode;
+import com.schwab.urlshortener.url.domain.ShortCodeDeactivatedException;
 import com.schwab.urlshortener.url.domain.ShortCodeExhaustedException;
 import com.schwab.urlshortener.url.domain.ShortCodeNotFoundException;
+import com.schwab.urlshortener.url.domain.UrlDeactivatedException;
 import com.schwab.urlshortener.url.domain.UrlMapping;
+import com.schwab.urlshortener.url.domain.UrlStatus;
 import com.schwab.urlshortener.url.generation.Sha256;
 import com.schwab.urlshortener.url.generation.ShortCodeGenerator;
 import com.schwab.urlshortener.url.repository.UrlMappingRepository;
@@ -64,7 +67,7 @@ public class UrlService {
 
         Optional<UrlMapping> existing = repository.findByNormalizedUrlHash(normalizedUrlHash);
         if (existing.isPresent()) {
-            return ShortenResult.existing(existing.get());
+            return reuse(existing.get());
         }
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
@@ -82,7 +85,7 @@ public class UrlService {
                 // Expected only if a concurrent request inserted this URL or this code between our read and write.
                 Optional<UrlMapping> winner = repository.findByNormalizedUrlHash(normalizedUrlHash);
                 if (winner.isPresent()) {
-                    return ShortenResult.existing(winner.get());
+                    return reuse(winner.get());
                 }
                 if (!repository.existsByShortCode(candidate)) {
                     throw e; // neither race explains it: an unexpected violation, not a collision to retry
@@ -95,18 +98,55 @@ public class UrlService {
     }
 
     /**
-     * Resolves a short code in its own read-only transaction, which is complete before the caller
-     * records analytics.
+     * The single place deciding what an equivalent existing mapping means for a shorten request.
+     * Exhaustive over {@link UrlStatus} on purpose: a new lifecycle state fails to compile here until
+     * its shortening behavior is decided (ADR 0009). A deactivated mapping is never reused or reactivated.
+     */
+    private static ShortenResult reuse(UrlMapping existing) {
+        return switch (existing.getStatus()) {
+            case ACTIVE -> ShortenResult.existing(existing);
+            case DEACTIVATED -> throw new UrlDeactivatedException();
+        };
+    }
+
+    /**
+     * Looks up a mapping whatever its lifecycle state, in its own read-only transaction. Used by
+     * analytics, so history stays available for deactivated mappings: do not add lifecycle checks
+     * here; redirects go through {@link #resolveForRedirect(String)}.
      *
      * @throws InvalidShortCodeException if the code is malformed (checked before any database access)
      * @throws ShortCodeNotFoundException if the code is well-formed but unknown
      */
     @Transactional(readOnly = true)
     public ResolvedUrl resolve(String shortCode) {
+        return toResolved(find(shortCode));
+    }
+
+    /**
+     * Resolves a short code for a redirect: the mapping must exist and its lifecycle must permit
+     * redirects. Runs in its own read-only transaction, which is complete before the caller records
+     * analytics, and sees the last committed lifecycle state.
+     *
+     * @throws InvalidShortCodeException if the code is malformed (checked before any database access)
+     * @throws ShortCodeNotFoundException if the code is well-formed but unknown
+     * @throws ShortCodeDeactivatedException if the mapping exists but no longer permits redirects
+     */
+    @Transactional(readOnly = true)
+    public ResolvedUrl resolveForRedirect(String shortCode) {
+        UrlMapping mapping = find(shortCode);
+        if (!mapping.canRedirect()) {
+            throw new ShortCodeDeactivatedException();
+        }
+        return toResolved(mapping);
+    }
+
+    private UrlMapping find(String shortCode) {
         ShortCode.requireValid(shortCode);
-        return repository.findByShortCode(shortCode)
-                .map(mapping -> new ResolvedUrl(mapping.getId(), mapping.getShortCode(), mapping.getDestinationUrl()))
-                .orElseThrow(ShortCodeNotFoundException::new);
+        return repository.findByShortCode(shortCode).orElseThrow(ShortCodeNotFoundException::new);
+    }
+
+    private static ResolvedUrl toResolved(UrlMapping mapping) {
+        return new ResolvedUrl(mapping.getId(), mapping.getShortCode(), mapping.getDestinationUrl());
     }
 
     // Truncated to the database's microsecond precision so a re-read returns an identical value.
