@@ -2,6 +2,7 @@ package com.schwab.urlshortener.common.error;
 
 import com.schwab.urlshortener.common.filter.CorrelationIdFilter;
 import com.schwab.urlshortener.common.logging.LogSanitizer;
+import com.schwab.urlshortener.url.domain.InvalidShortCodeException;
 import com.schwab.urlshortener.url.domain.InvalidUrlException;
 import com.schwab.urlshortener.url.domain.ShortCodeExhaustedException;
 import com.schwab.urlshortener.url.domain.ShortCodeNotFoundException;
@@ -43,6 +44,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleInvalidUrl(InvalidUrlException e, HttpServletRequest request) {
         log.debug("Rejected URL: {}", e.reason());
         return problem(HttpStatus.BAD_REQUEST, e.reason().name(), e.reason().message(), request);
+    }
+
+    @ExceptionHandler(InvalidShortCodeException.class)
+    ProblemDetail handleInvalidShortCode(InvalidShortCodeException e, HttpServletRequest request) {
+        log.debug("Rejected malformed short code");
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_SHORT_CODE",
+                "Short code must contain exactly six lowercase hexadecimal characters.", request);
     }
 
     @ExceptionHandler(ShortCodeNotFoundException.class)

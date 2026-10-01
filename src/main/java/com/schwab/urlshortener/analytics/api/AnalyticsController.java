@@ -2,6 +2,7 @@ package com.schwab.urlshortener.analytics.api;
 
 import com.schwab.urlshortener.analytics.api.dto.AnalyticsResponse;
 import com.schwab.urlshortener.analytics.service.AnalyticsService;
+import com.schwab.urlshortener.url.domain.ShortCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,11 +30,15 @@ class AnalyticsController {
     @Operation(summary = "Get click analytics",
             description = "Counts successful redirects only; unknown codes and failed redirects are not counted.")
     @ApiResponse(responseCode = "200", description = "Analytics for the short code")
-    @ApiResponse(responseCode = "404", description = "Unknown or malformed short code",
+    @ApiResponse(responseCode = "400", description = "Malformed short code (must be six lowercase hex characters)",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "No URL exists for this well-formed short code",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(implementation = ProblemDetail.class)))
     AnalyticsResponse analytics(
-            @Parameter(description = "Six lowercase hex characters", example = "3f2a9c") @PathVariable String shortCode) {
-        return AnalyticsResponse.from(shortCode, analyticsService.analyticsFor(shortCode));
+            @Parameter(description = "Six lowercase hex characters", example = "3f2a9c",
+                    schema = @Schema(pattern = ShortCode.FORMAT)) @PathVariable String shortCode) {
+        return AnalyticsResponse.from(shortCode, analyticsService.analyticsFor(ShortCode.requireValid(shortCode)));
     }
 }

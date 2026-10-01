@@ -1,7 +1,8 @@
 package com.schwab.urlshortener.url.service;
 
 import com.schwab.urlshortener.common.config.ShortenerProperties;
-import com.schwab.urlshortener.common.logging.LogSanitizer;
+import com.schwab.urlshortener.url.domain.InvalidShortCodeException;
+import com.schwab.urlshortener.url.domain.ShortCode;
 import com.schwab.urlshortener.url.domain.ShortCodeExhaustedException;
 import com.schwab.urlshortener.url.domain.ShortCodeNotFoundException;
 import com.schwab.urlshortener.url.domain.UrlMapping;
@@ -13,7 +14,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UrlService {
 
     private static final Logger log = LoggerFactory.getLogger(UrlService.class);
-    private static final Pattern SHORT_CODE_FORMAT = Pattern.compile("^[0-9a-f]{6}$");
 
     private final UrlValidator validator;
     private final List<DestinationPolicy> destinationPolicies;
@@ -96,14 +95,12 @@ public class UrlService {
      * Resolves a short code in its own read-only transaction, which is complete before the caller
      * records analytics.
      *
-     * @throws ShortCodeNotFoundException if the code is malformed or unknown (malformed codes skip the database)
+     * @throws InvalidShortCodeException if the code is malformed (checked before any database access)
+     * @throws ShortCodeNotFoundException if the code is well-formed but unknown
      */
     @Transactional(readOnly = true)
     public ResolvedUrl resolve(String shortCode) {
-        if (shortCode == null || !SHORT_CODE_FORMAT.matcher(shortCode).matches()) {
-            log.debug("Rejected malformed short code {}", LogSanitizer.sanitize(shortCode));
-            throw new ShortCodeNotFoundException();
-        }
+        ShortCode.requireValid(shortCode);
         return repository.findByShortCode(shortCode)
                 .map(mapping -> new ResolvedUrl(mapping.getId(), mapping.getShortCode(), mapping.getDestinationUrl()))
                 .orElseThrow(ShortCodeNotFoundException::new);
