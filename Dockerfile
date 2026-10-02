@@ -4,7 +4,7 @@
 # for reproducible production builds, pin by digest (image@sha256:...) and let Dependabot bump it.
 
 # ---- build stage: full JDK + Maven wrapper, discarded after the jar is produced ----
-FROM eclipse-temurin:21.0.12.1_1-jdk-alpine-3.24 AS build
+FROM eclipse-temurin:24-jdk-alpine-3.22 AS build
 WORKDIR /workspace
 
 COPY .mvn/ .mvn/
@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/root/.m2 \
  && cp target/url-shortener-*.jar /workspace/app.jar
 
 # ---- runtime stage: JRE only, non-root, no build tooling ----
-FROM eclipse-temurin:21.0.12.1_1-jre-alpine-3.24
+FROM eclipse-temurin:24-jre-alpine-3.22
 
 RUN addgroup -S app && adduser -S -G app -H -s /sbin/nologin app
 WORKDIR /app
