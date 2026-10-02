@@ -2,3 +2,10 @@ target/
 *.log
 .DS_Store
 Thumbs.db
+
+# IDE metadata
+.idea/
+*.iml
+
+# Local Claude Code settings (machine-specific permissions); CLAUDE.md is shared and stays tracked
+.claude/settings.local.json
