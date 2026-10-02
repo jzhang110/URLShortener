@@ -22,7 +22,7 @@
         <!-- springdoc 3.1.x is built against Spring Boot 4.1 -->
         <springdoc.version>3.1.1</springdoc.version>
         <!-- cucumber 7.34.x is built against Spring Framework 7 / JUnit 6 -->
-        <cucumber.version>7.34.9</cucumber.version>
+        <cucumber.version>8.0.3</cucumber.version>
         <!-- Default so surefire's @{argLine} resolves when no coverage agent contributes one -->
         <argLine></argLine>
     </properties>
