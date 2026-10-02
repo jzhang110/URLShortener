@@ -1,0 +1,24 @@
+# Git and Conventional Commit conventions
+
+- **Format:** `<type>(<optional scope>): <imperative summary>`. Keep the summary to 72 characters or fewer, lowercase, with no trailing period.
+  - Types:
+    - `feat`
+    - `fix`
+    - `test`
+    - `docs`
+    - `refactor`
+    - `perf`
+    - `build`
+    - `ci`
+    - `chore`
+  - Scopes are feature names: `url`, `redirect`, `analytics`, `common`, `persistence`, `docker`.
+  - Examples:
+    - `feat(url): return existing mapping for equivalent URLs`
+    - `fix(redirect): keep 302 when click recording fails`
+    - `docs(adr): record retry hash input decision`
+- **Body:** explains *why* and any tradeoffs; wrap at 72. Reference ADRs and issues.
+- **Breaking API changes:** `feat(api)!: ...` plus a `BREAKING CHANGE:` footer.
+- **One logical change per commit.** Every commit passes `./mvnw verify`. Tests and code for a behavior land in the same commit. Unimplemented Cucumber scenarios are tagged `@pending`.
+- **Never commit** secrets, `target/`, local IDE state or logs (see `.gitignore`).
+- **Branches:** for collaborative repositories, use `feat/<short-name>` and `fix/<short-name>` branches and merge through reviewed pull requests ([14-code-review-checklist](14-code-review-checklist.md)). This take-home repository may use direct engineer-authored commits while keeping the same review and verification discipline.
+- History on shared branches isn't rewritten.

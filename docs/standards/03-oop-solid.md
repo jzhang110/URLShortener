@@ -1,0 +1,21 @@
+# Object-oriented design and SOLID
+
+- **SRP.** One reason to change per class:
+  - `UrlValidator` handles syntax
+  - `DestinationPolicy` handles destination rules
+  - `UrlNormalizer` handles identity
+  - `ShortCodeGenerator` produces candidates
+  - `UrlService` orchestrates
+  - `RedirectService` runs the redirect workflow
+- **OCP.** Extend at the declared extension points. A new destination rule, such as a reputation check, is a new `DestinationPolicy` bean, and `UrlService` picks up every policy automatically. Alternative deterministic short-code algorithms that keep the six-lowercase-hex-character contract may implement `ShortCodeGenerator`. Custom aliases would break that contract, so they need an explicit API and domain contract change, not the current `ShortCodeGenerator` abstraction.
+- **LSP.** Any implementation must honor its interface contract. A generator must be deterministic and return `^[0-9a-f]{6}$`. A policy must either return or throw `InvalidUrlException(DESTINATION_NOT_ALLOWED)`.
+- **ISP.** Interfaces are single-method and role-specific.
+- **DIP.** Services depend on interfaces only where variation is real. Everywhere else they depend on concrete, injected classes.
+- **Interfaces only at real extension points.** Don't add an interface just because a class exists or "for mocking". Mockito can mock concrete classes.
+- **Prefer composition** (a policy list, injected collaborators) over inheritance. The only inheritance in this repo is framework-driven: `ResponseEntityExceptionHandler`, `OncePerRequestFilter`, and the test base class `IntegrationTest`.
+- **Domain behavior where it belongs.** A mapping's identity is immutable, and the entity enforces that itself: no setters, `updatable = false`. Lifecycle state changes only through intent methods such as `deactivate()`, while lifecycle decisions such as `canRedirect()` remain encapsulated in the domain model (ADR 0009).
+- **Lifecycle decisions stay central.** Redirect eligibility is `UrlMapping.canRedirect()`, backed by `UrlStatus.allowsRedirect()`. The one other status decision, what an existing mapping means for a shorten request, is the exhaustive `switch` in `UrlService.reuse()`. Don't scatter `status == …` checks elsewhere.
+- **Avoid:**
+  - god services
+  - business logic in controllers
+  - patterns that don't solve a real problem here, such as factories for one product or builders for records
